@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="css/games.css">
+</head>
+<body>
+<style>
+.grid-container {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  background-color: #2196F3;
+  padding: 10px;
+  width: 239px;
+  height: 239px;
+  margin: auto;
+    position: relative;
+    top: 100px;
+}
+.grid-item {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+}
+</style>
+  <h2></h2>
+  <div class="grid-container">
+  <div class="grid-item" id="pole1"></div>
+  <div class="grid-item" id="pole2"></div>
+  <div class="grid-item" id="pole3"></div>  
+  <div class="grid-item" id="pole4"></div>
+  <div class="grid-item" id="pole5"></div>
+  <div class="grid-item" id="pole6"></div>  
+  <div class="grid-item" id="pole7"></div>
+  <div class="grid-item" id="pole8"></div>
+  <div class="grid-item" id="pole9"></div>  
+</div>
+  <script src="../socket.io/socket.io.js"></script>
+<script>
+  const room = io();
+  let g = "";
+  // let y = [1,0,1,1,1,0,1,0,0,1];
+  // var rand = Math.floor(Math.random()*y.length);
+  // var rValue = y[rand];
+  let isAdmin = localStorage.getItem("adm");
+  if (isAdmin && isAdmin == "yes") {
+    g = "X";
+  } else {
+    g = "O";
+  }
+  let url = new URL(window.parent.location.href);
+  var site = url.searchParams.get("room");
+  let cnt = Number(url.searchParams.get("count"));
+  //var socket = io(`/${site}`);
+  document.querySelector(".grid-container").onclick = function(e) {
+    let el = e.target;
+    if (el.classList.contains("grid-item")) {
+      el.innerHTML = g;
+      room.emit("position", {
+        room: site,
+        element: el.id,
+        value: g
+      });
+      let pole1 = document.querySelector("#pole1").innerText;
+      let pole2 = document.querySelector("#pole2").innerText;
+      let pole3 = document.querySelector("#pole3").innerText;
+      let pole4 = document.querySelector("#pole4").innerText;
+      let pole5 = document.querySelector("#pole5").innerText;
+      let pole6 = document.querySelector("#pole6").innerText;
+      let pole7 = document.querySelector("#pole7").innerText;
+      let pole8 = document.querySelector("#pole8").innerText;
+      let pole9 = document.querySelector("#pole9").innerText;
+      if ((pole1 == g && pole2 == g && pole3 == g) || (pole4 == g && pole5 == g && pole6 == g) || (pole7 == g && pole8 == g && pole9 == g) || (pole1 == g && pole5 == g && pole9 == g) || (pole3 == g && pole5 == g && pole7 == g) || (pole1 == g && pole4 == g && pole7 == g) || (pole2 == g && pole5 == g && pole8 == g) || (pole3 == g && pole6 == g && pole9 == g)) {
+      alert("You win!");
+      sessionStorage.setItem("win", "yes");
+      room.emit("loose", {
+        room: site,
+        text: "Ти програв"
+      });
+    }
+  }
+}
+  room.on("ooh", (data) => {
+    let pos = data.room;
+    if (site == pos) {
+      --cnt;
+      localStorage.setItem("cnt", cnt);
+      if (!sessionStorage.getItem("win") || sessionStorage.getItem("win") != "yes") {
+        alert(data.text);
+        room.emit("load", {
+          room: site,
+        });
+      }
+    }
+  });
+  room.on("reload", (data) => {
+    if (site == data.room) {
+      if (Number(localStorage.getItem("cnt")) == Number(url.searchParams.get("count"))) {
+        alert("ГРА ЗАВЕРШЕНА")
+      } else {
+        alert("НАСТУПНИЙ РАУНД")
+        location.reload();
+      }
+    }
+  });
+  room.on("get", (data) => {
+    let pos = data.room;
+    let el = data.element;
+    let value = data.value;
+    if (site == pos) {
+      document.querySelector(`#${el}`).innerText = value;
+    }
+  });
+</script>
+</body>
+</html>
